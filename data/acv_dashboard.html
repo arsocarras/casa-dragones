@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Dragones — ACV Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --gold:    #B8922A;
+    --gold-lt: #D4AE5C;
+    --obsidian:#0D0D0D;
+    --ink:     #1A1A1A;
+    --slate:   #2C2C2C;
+    --mist:    #F5F3EE;
+    --fog:     #EDEBE4;
+    --ty:      #1A6B5C;
+    --ty-lt:   #2E9B88;
+    --ly:      #7A4419;
+    --ly-lt:   #B56628;
+    --up:      #1A6B5C;
+    --dn:      #8B2020;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--mist);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--obsidian);
+    padding: 28px 40px 22px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--gold);
+  }
+  .brand { display: flex; flex-direction: column; gap: 4px; }
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: var(--gold-lt);
+    text-transform: uppercase;
+  }
+  .header-date {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: #888;
+    text-transform: uppercase;
+    padding-bottom: 2px;
+  }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    background: var(--fog);
+    border-bottom: 1px solid #DDD9CE;
+    padding: 16px 40px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #888;
+  }
+  .filter-bar select, .filter-bar input[type=checkbox] { cursor: pointer; }
+  select {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid #CCC9BE;
+    border-radius: 3px;
+    padding: 6px 30px 6px 10px;
+    color: var(--ink);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 120px;
+  }
+  select:focus { outline: none; border-color: var(--gold); }
+
+  .sku-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #CCC9BE;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    color: #555;
+  }
+  .pill.active {
+    background: var(--obsidian);
+    border-color: var(--obsidian);
+    color: #fff;
+  }
+  .pill.all-pill.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #fff;
+  }
+  .pill:hover { border-color: var(--gold); }
+
+  /* ── MAIN LAYOUT ── */
+  main { padding: 32px 40px 48px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #E4E1D8;
+    border-radius: 4px;
+    padding: 20px 22px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .kpi-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-value sup { font-size: 16px; vertical-align: super; }
+  .kpi-delta {
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .delta-up { color: var(--up); }
+  .delta-dn { color: var(--dn); }
+  .delta-arrow { font-size: 13px; }
+
+  /* ── CHART SECTIONS ── */
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .section-note {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 18px;
+    letter-spacing: 0.02em;
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .chart-card {
+    background: #fff;
+    border: 1px solid #E4E1D8;
+    border-radius: 4px;
+    padding: 22px 22px 18px;
+  }
+  .chart-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .chart-wrap { position: relative; height: 300px; }
+  .chart-wrap-tall { position: relative; height: 380px; }
+
+  /* ── ACV TABLE ── */
+  .table-card {
+    background: #fff;
+    border: 1px solid #E4E1D8;
+    border-radius: 4px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid #E4E1D8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: var(--fog);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #777;
+    border-bottom: 1px solid #E4E1D8;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--gold); }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+  thead th.sorted .sort-arrow { opacity: 1; color: var(--gold); }
+  tbody tr { border-bottom: 1px solid #F0EDE6; transition: background 0.1s; }
+  tbody tr:hover { background: #FAFAF6; }
+  tbody td { padding: 9px 14px; color: #333; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.state-col { font-weight: 500; color: var(--ink); }
+  td.region-col { color: #888; font-size: 11px; }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .mini-bar-bg { height: 6px; background: #EEE; border-radius: 3px; flex: 1; min-width: 60px; }
+  .mini-bar { height: 6px; border-radius: 3px; background: var(--gold); }
+  .chg-up { color: var(--up); font-weight: 500; }
+  .chg-dn { color: var(--dn); font-weight: 500; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #E4E1D8;
+    margin: 8px 0 28px;
+  }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 2px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    header, .filter-bar, main { padding-left: 20px; padding-right: 20px; }
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-name">Casa Dragones</div>
+    <div class="brand-sub">ACV Performance Dashboard</div>
+  </div>
+  <div class="header-date">Jun 16, 2026 &nbsp;·&nbsp; Data: data_summary</div>
+</header>
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">Region</span>
+    <select id="sel-region">
+      <option value="ALL">All Regions</option>
+      <option>West</option>
+      <option>East</option>
+      <option>Central</option>
+      <option>Control</option>
+      <option>Other</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">State</span>
+    <select id="sel-state"><option value="ALL">All States</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">SKU Selection</span>
+    <div class="sku-pills" id="sku-pills">
+      <span class="pill all-pill active" data-sku="ALL">All SKUs</span>
+      <span class="pill" data-sku="Joven">Joven</span>
+      <span class="pill" data-sku="Blanco">Blanco</span>
+      <span class="pill" data-sku="Añejo">Añejo</span>
+      <span class="pill" data-sku="Reposado">Reposado</span>
+      <span class="pill" data-sku="Cristalino">Cristalino</span>
+      <span class="pill" data-sku="TK">TK</span>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- KPI CARDS -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">9L Cases — TY</div>
+      <div class="kpi-value" id="kpi-9lc-ty">—</div>
+      <div class="kpi-delta" id="kpi-9lc-delta">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">9L Cases — LY</div>
+      <div class="kpi-value" id="kpi-9lc-ly">—</div>
+      <div class="kpi-delta" style="color:#999; font-size:11px;">Prior Year Baseline</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">POD TY (# Accounts)</div>
+      <div class="kpi-value" id="kpi-pod-ty">—</div>
+      <div class="kpi-delta" id="kpi-pod-delta">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Weighted ACV — TY</div>
+      <div class="kpi-value" id="kpi-acv-ty">—<sup>%</sup></div>
+      <div class="kpi-delta" id="kpi-acv-delta">—</div>
+    </div>
+  </div>
+
+  <!-- 9LC CHARTS -->
+  <div class="section-title">9-Liter Cases · TY vs LY</div>
+  <div class="section-note">Grouped by state — scroll or filter to focus</div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">
+        <span class="chart-dot" style="background:var(--ty)"></span> TY &nbsp;
+        <span class="chart-dot" style="background:var(--ly-lt)"></span> LY &nbsp;
+        <span style="margin-left:auto; font-weight:400; font-style:italic; color:#aaa">Grouped Bar — by State</span>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="chart-9lc-bar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">
+        <span class="chart-dot" style="background:var(--gold)"></span> YoY Δ 9LC
+        <span style="margin-left:auto; font-weight:400; font-style:italic; color:#aaa">Change vs LY by State</span>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="chart-9lc-delta"></canvas></div>
+    </div>
+  </div>
+
+  <!-- POD CHARTS -->
+  <div class="section-title">Points of Distribution · TY vs LY</div>
+  <div class="section-note">Count of accounts carrying each SKU — grouped by state</div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">
+        <span class="chart-dot" style="background:var(--ty)"></span> POD TY &nbsp;
+        <span class="chart-dot" style="background:var(--ly-lt)"></span> POD LY &nbsp;
+        <span style="margin-left:auto; font-weight:400; font-style:italic; color:#aaa">Grouped Bar — by State</span>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="chart-pod-bar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">
+        <span class="chart-dot" style="background:var(--gold)"></span> YoY Δ POD
+        <span style="margin-left:auto; font-weight:400; font-style:italic; color:#aaa">New Doors Gained / Lost</span>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="chart-pod-delta"></canvas></div>
+    </div>
+  </div>
+
+  <!-- SKU BREAKDOWN (when All SKUs) -->
+  <div id="sku-breakdown-section">
+    <div class="section-title">SKU Mix Breakdown</div>
+    <div class="section-note">Share of 9LC volume by SKU — TY vs LY</div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">9LC Volume by SKU — TY</div>
+        <div class="chart-wrap"><canvas id="chart-sku-ty"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">9LC Volume by SKU — LY</div>
+        <div class="chart-wrap"><canvas id="chart-sku-ly"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE TABLE -->
+  <hr class="divider">
+  <div class="section-title">State Detail</div>
+  <div class="section-note">Click column headers to sort</div>
+  <div class="table-card">
+    <div class="table-header">
+      <span style="font-size:11px; color:#888;" id="table-count">— states</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('State')" id="th-State">State <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('Region')" id="th-Region">Region <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('acv_ty')" id="th-acv_ty" class="sorted">ACV TY % <span class="sort-arrow">↓</span></th>
+            <th onclick="sortTable('acv_ly')" id="th-acv_ly">ACV LY % <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('acv_chg')" id="th-acv_chg">ACV Δ <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('lc_ty')" id="th-lc_ty">9LC TY <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('lc_ly')" id="th-lc_ly">9LC LY <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('lc_chg')" id="th-lc_chg">9LC Δ% <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('pod_ty')" id="th-pod_ty">POD TY <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('pod_ly')" id="th-pod_ly">POD LY <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('pod_chg')" id="th-pod_chg">POD Δ <span class="sort-arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="state-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── RAW DATA ──────────────────────────────────────────────────────────────────
+const RAW = [{"State": "AK", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 0.0, "Blanco_9LC_TY": 4.421, "A\u00f1ejo_9LC_TY": 0.166, "Reposado_9LC_TY": 0.415, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 7.25, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.083, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 0, "Blanco_POD_TY": 16, "A\u00f1ejo_POD_TY": 2, "Reposado_POD_TY": 2, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 4, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 1, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 5.002, "Total_9LC_LY": 7.333, "Total_POD_TY": 18, "Total_POD_LY": 5, "State_ACV_TY": 14.834, "State_ACV_LY": 5.395}, {"State": "AR", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 1.164, "Blanco_9LC_TY": 57.691, "A\u00f1ejo_9LC_TY": 1.748, "Reposado_9LC_TY": 3.749, "Cristalino_9LC_TY": 4.165, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.25, "Blanco_9LC_LY": 22.607, "A\u00f1ejo_9LC_LY": 0.417, "Reposado_9LC_LY": 1.165, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 9, "Blanco_POD_TY": 51, "A\u00f1ejo_POD_TY": 8, "Reposado_POD_TY": 9, "Cristalino_POD_TY": 17, "TK_POD_TY": 0, "Joven_POD_LY": 1, "Blanco_POD_LY": 23, "A\u00f1ejo_POD_LY": 1, "Reposado_POD_LY": 3, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 68.517, "Total_9LC_LY": 25.353, "Total_POD_TY": 67, "Total_POD_LY": 24, "State_ACV_TY": 34.507, "State_ACV_LY": 16.689}, {"State": "AZ", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 21.736, "Blanco_9LC_TY": 288.315, "A\u00f1ejo_9LC_TY": 50.663, "Reposado_9LC_TY": 38.109, "Cristalino_9LC_TY": 48.831, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 16.649, "Blanco_9LC_LY": 254.675, "A\u00f1ejo_9LC_LY": 28.191, "Reposado_9LC_LY": 17.892, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 54, "Blanco_POD_TY": 166, "A\u00f1ejo_POD_TY": 80, "Reposado_POD_TY": 77, "Cristalino_POD_TY": 43, "TK_POD_TY": 0, "Joven_POD_LY": 27, "Blanco_POD_LY": 68, "A\u00f1ejo_POD_LY": 26, "Reposado_POD_LY": 23, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 447.654, "Total_9LC_LY": 322.494, "Total_POD_TY": 211, "Total_POD_LY": 80, "State_ACV_TY": 59.563, "State_ACV_LY": 47.749}, {"State": "CA", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 402.852, "Blanco_9LC_TY": 2985.704, "A\u00f1ejo_9LC_TY": 266.273, "Reposado_9LC_TY": 322.892, "Cristalino_9LC_TY": 1262.244, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 277.46, "Blanco_9LC_LY": 2603.245, "A\u00f1ejo_9LC_LY": 156.906, "Reposado_9LC_LY": 219.024, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 533, "Blanco_POD_TY": 1135, "A\u00f1ejo_POD_TY": 434, "Reposado_POD_TY": 536, "Cristalino_POD_TY": 426, "TK_POD_TY": 0, "Joven_POD_LY": 251, "Blanco_POD_LY": 572, "A\u00f1ejo_POD_LY": 144, "Reposado_POD_LY": 206, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 5239.965, "Total_9LC_LY": 3382.027, "Total_POD_TY": 1695, "Total_POD_LY": 756, "State_ACV_TY": 48.001, "State_ACV_LY": 37.981}, {"State": "CO", "Region": "West", "SGWS_Region": "Central", "Joven_9LC_TY": 26.232, "Blanco_9LC_TY": 314.96, "A\u00f1ejo_9LC_TY": 26.91, "Reposado_9LC_TY": 45.733, "Cristalino_9LC_TY": 16.334, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 18.904, "Blanco_9LC_LY": 255.779, "A\u00f1ejo_9LC_LY": 19.549, "Reposado_9LC_LY": 21.573, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 82, "Blanco_POD_TY": 240, "A\u00f1ejo_POD_TY": 78, "Reposado_POD_TY": 83, "Cristalino_POD_TY": 35, "TK_POD_TY": 0, "Joven_POD_LY": 33, "Blanco_POD_LY": 107, "A\u00f1ejo_POD_LY": 24, "Reposado_POD_LY": 29, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 430.169, "Total_9LC_LY": 323.133, "Total_POD_TY": 304, "Total_POD_LY": 136, "State_ACV_TY": 45.698, "State_ACV_LY": 33.868}, {"State": "CT", "Region": "East", "SGWS_Region": "Non-SGWS", "Joven_9LC_TY": 0.0, "Blanco_9LC_TY": 0.0, "A\u00f1ejo_9LC_TY": 0.0, "Reposado_9LC_TY": 0.0, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 0.0, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.0, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 0, "Blanco_POD_TY": 0, "A\u00f1ejo_POD_TY": 0, "Reposado_POD_TY": 0, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 0, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 0, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 0.0, "Total_9LC_LY": 0.0, "Total_POD_TY": 0, "Total_POD_LY": 0, "State_ACV_TY": 0.0, "State_ACV_LY": 0.0}, {"State": "DC", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 11.991, "Blanco_9LC_TY": 133.68, "A\u00f1ejo_9LC_TY": 8.49, "Reposado_9LC_TY": 23.956, "Cristalino_9LC_TY": 9.995, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 3.417, "Blanco_9LC_LY": 63.52, "A\u00f1ejo_9LC_LY": 2.502, "Reposado_9LC_LY": 7.673, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 33, "Blanco_POD_TY": 98, "A\u00f1ejo_POD_TY": 37, "Reposado_POD_TY": 51, "Cristalino_POD_TY": 20, "TK_POD_TY": 0, "Joven_POD_LY": 8, "Blanco_POD_LY": 46, "A\u00f1ejo_POD_LY": 13, "Reposado_POD_LY": 21, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 188.112, "Total_9LC_LY": 85.686, "Total_POD_TY": 133, "Total_POD_LY": 64, "State_ACV_TY": 43.857, "State_ACV_LY": 19.204}, {"State": "DE", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 1.748, "Blanco_9LC_TY": 28.33, "A\u00f1ejo_9LC_TY": 1.997, "Reposado_9LC_TY": 6.08, "Cristalino_9LC_TY": 3.999, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.999, "Blanco_9LC_LY": 22.76, "A\u00f1ejo_9LC_LY": 1.25, "Reposado_9LC_LY": 2.496, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 10, "Blanco_POD_TY": 42, "A\u00f1ejo_POD_TY": 11, "Reposado_POD_TY": 20, "Cristalino_POD_TY": 12, "TK_POD_TY": 0, "Joven_POD_LY": 4, "Blanco_POD_LY": 15, "A\u00f1ejo_POD_LY": 2, "Reposado_POD_LY": 4, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 42.154, "Total_9LC_LY": 28.254, "Total_POD_TY": 53, "Total_POD_LY": 17, "State_ACV_TY": 40.103, "State_ACV_LY": 32.59}, {"State": "FL", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 284.833, "Blanco_9LC_TY": 3082.451, "A\u00f1ejo_9LC_TY": 217.23, "Reposado_9LC_TY": 495.702, "Cristalino_9LC_TY": 496.661, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 211.195, "Blanco_9LC_LY": 3200.302, "A\u00f1ejo_9LC_LY": 145.107, "Reposado_9LC_LY": 246.672, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 389, "Blanco_POD_TY": 1316, "A\u00f1ejo_POD_TY": 424, "Reposado_POD_TY": 490, "Cristalino_POD_TY": 286, "TK_POD_TY": 0, "Joven_POD_LY": 167, "Blanco_POD_LY": 818, "A\u00f1ejo_POD_LY": 190, "Reposado_POD_LY": 235, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 4576.877, "Total_9LC_LY": 3876.914, "Total_POD_TY": 1681, "Total_POD_LY": 959, "State_ACV_TY": 55.023, "State_ACV_LY": 42.603}, {"State": "HI", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 4.748, "Blanco_9LC_TY": 90.48, "A\u00f1ejo_9LC_TY": 1.332, "Reposado_9LC_TY": 3.832, "Cristalino_9LC_TY": 0.666, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 3.332, "Blanco_9LC_LY": 87.355, "A\u00f1ejo_9LC_LY": 0.333, "Reposado_9LC_LY": 2.665, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 8, "Blanco_POD_TY": 41, "A\u00f1ejo_POD_TY": 6, "Reposado_POD_TY": 9, "Cristalino_POD_TY": 4, "TK_POD_TY": 0, "Joven_POD_LY": 3, "Blanco_POD_LY": 22, "A\u00f1ejo_POD_LY": 1, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 101.058, "Total_9LC_LY": 95.101, "Total_POD_TY": 48, "Total_POD_LY": 23, "State_ACV_TY": 16.55, "State_ACV_LY": 11.022}, {"State": "IL", "Region": "East", "SGWS_Region": "Central", "Joven_9LC_TY": 38.24, "Blanco_9LC_TY": 611.419, "A\u00f1ejo_9LC_TY": 76.165, "Reposado_9LC_TY": 75.142, "Cristalino_9LC_TY": 225.41, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 14.583, "Blanco_9LC_LY": 581.27, "A\u00f1ejo_9LC_LY": 39.834, "Reposado_9LC_LY": 38.635, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 75, "Blanco_POD_TY": 282, "A\u00f1ejo_POD_TY": 123, "Reposado_POD_TY": 130, "Cristalino_POD_TY": 96, "TK_POD_TY": 0, "Joven_POD_LY": 19, "Blanco_POD_LY": 132, "A\u00f1ejo_POD_LY": 48, "Reposado_POD_LY": 52, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 1026.376, "Total_9LC_LY": 697.979, "Total_POD_TY": 388, "Total_POD_LY": 156, "State_ACV_TY": 45.032, "State_ACV_LY": 35.687}, {"State": "IN", "Region": "East", "SGWS_Region": "Central", "Joven_9LC_TY": 4.08, "Blanco_9LC_TY": 52.1, "A\u00f1ejo_9LC_TY": 5.831, "Reposado_9LC_TY": 8.669, "Cristalino_9LC_TY": 14.831, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.334, "Blanco_9LC_LY": 51.14, "A\u00f1ejo_9LC_LY": 0.83, "Reposado_9LC_LY": 1.001, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 14, "Blanco_POD_TY": 71, "A\u00f1ejo_POD_TY": 25, "Reposado_POD_TY": 33, "Cristalino_POD_TY": 19, "TK_POD_TY": 0, "Joven_POD_LY": 2, "Blanco_POD_LY": 22, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 85.511, "Total_9LC_LY": 57.051, "Total_POD_TY": 100, "Total_POD_LY": 29, "State_ACV_TY": 21.312, "State_ACV_LY": 12.227}, {"State": "KS", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 1.499, "Blanco_9LC_TY": 27.603, "A\u00f1ejo_9LC_TY": 1.248, "Reposado_9LC_TY": 9.333, "Cristalino_9LC_TY": 3.082, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 14.519, "A\u00f1ejo_9LC_LY": 0.75, "Reposado_9LC_LY": 0.832, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 8, "Blanco_POD_TY": 56, "A\u00f1ejo_POD_TY": 8, "Reposado_POD_TY": 20, "Cristalino_POD_TY": 11, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 21, "A\u00f1ejo_POD_LY": 3, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 42.765, "Total_9LC_LY": 17.6, "Total_POD_TY": 75, "Total_POD_LY": 24, "State_ACV_TY": 59.329, "State_ACV_LY": 31.128}, {"State": "KY", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 0.334, "Blanco_9LC_TY": 21.965, "A\u00f1ejo_9LC_TY": 5.331, "Reposado_9LC_TY": 2.455, "Cristalino_9LC_TY": 5.33, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 13.218, "A\u00f1ejo_9LC_LY": 2.082, "Reposado_9LC_LY": 3.418, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 3, "Blanco_POD_TY": 46, "A\u00f1ejo_POD_TY": 10, "Reposado_POD_TY": 7, "Cristalino_POD_TY": 26, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 13, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 4, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 35.415, "Total_9LC_LY": 19.052, "Total_POD_TY": 73, "Total_POD_LY": 16, "State_ACV_TY": 14.842, "State_ACV_LY": 9.656}, {"State": "LA", "Region": "West", "SGWS_Region": "Central", "Joven_9LC_TY": 2.41, "Blanco_9LC_TY": 82.442, "A\u00f1ejo_9LC_TY": 2.706, "Reposado_9LC_TY": 10.201, "Cristalino_9LC_TY": 3.666, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 1.581, "Blanco_9LC_LY": 63.952, "A\u00f1ejo_9LC_LY": 0.916, "Reposado_9LC_LY": 3.249, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 18, "Blanco_POD_TY": 120, "A\u00f1ejo_POD_TY": 16, "Reposado_POD_TY": 36, "Cristalino_POD_TY": 10, "TK_POD_TY": 0, "Joven_POD_LY": 5, "Blanco_POD_LY": 45, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 6, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 101.425, "Total_9LC_LY": 70.527, "Total_POD_TY": 151, "Total_POD_LY": 51, "State_ACV_TY": 24.112, "State_ACV_LY": 15.181}, {"State": "MD", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 5.908, "Blanco_9LC_TY": 81.005, "A\u00f1ejo_9LC_TY": 14.951, "Reposado_9LC_TY": 22.492, "Cristalino_9LC_TY": 27.168, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 1.583, "Blanco_9LC_LY": 62.237, "A\u00f1ejo_9LC_LY": 7.728, "Reposado_9LC_LY": 8.057, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 23, "Blanco_POD_TY": 99, "A\u00f1ejo_POD_TY": 40, "Reposado_POD_TY": 51, "Cristalino_POD_TY": 43, "TK_POD_TY": 0, "Joven_POD_LY": 4, "Blanco_POD_LY": 26, "A\u00f1ejo_POD_LY": 8, "Reposado_POD_LY": 9, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 151.524, "Total_9LC_LY": 83.93, "Total_POD_TY": 155, "Total_POD_LY": 33, "State_ACV_TY": 38.234, "State_ACV_LY": 26.988}, {"State": "MN", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 3.663, "Blanco_9LC_TY": 50.485, "A\u00f1ejo_9LC_TY": 2.081, "Reposado_9LC_TY": 2.697, "Cristalino_9LC_TY": 3.747, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 2.247, "Blanco_9LC_LY": 53.48, "A\u00f1ejo_9LC_LY": 1.001, "Reposado_9LC_LY": 2.623, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 8, "Blanco_POD_TY": 37, "A\u00f1ejo_POD_TY": 7, "Reposado_POD_TY": 10, "Cristalino_POD_TY": 16, "TK_POD_TY": 0, "Joven_POD_LY": 5, "Blanco_POD_LY": 26, "A\u00f1ejo_POD_LY": 2, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 62.673, "Total_9LC_LY": 60.767, "Total_POD_TY": 49, "Total_POD_LY": 28, "State_ACV_TY": 36.904, "State_ACV_LY": 30.392}, {"State": "MO", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 3.577, "Blanco_9LC_TY": 71.53, "A\u00f1ejo_9LC_TY": 5.04, "Reposado_9LC_TY": 6.286, "Cristalino_9LC_TY": 2.5, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 2.665, "Blanco_9LC_LY": 55.53, "A\u00f1ejo_9LC_LY": 1.747, "Reposado_9LC_LY": 1.248, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 17, "Blanco_POD_TY": 130, "A\u00f1ejo_POD_TY": 24, "Reposado_POD_TY": 28, "Cristalino_POD_TY": 8, "TK_POD_TY": 0, "Joven_POD_LY": 5, "Blanco_POD_LY": 48, "A\u00f1ejo_POD_LY": 7, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 88.933, "Total_9LC_LY": 62.102, "Total_POD_TY": 158, "Total_POD_LY": 51, "State_ACV_TY": 20.945, "State_ACV_LY": 14.028}, {"State": "ND", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 0.083, "Blanco_9LC_TY": 7.02, "A\u00f1ejo_9LC_TY": 1.5, "Reposado_9LC_TY": 0.25, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 6.67, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.333, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 1, "Blanco_POD_TY": 13, "A\u00f1ejo_POD_TY": 3, "Reposado_POD_TY": 1, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 6, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 1, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 8.853, "Total_9LC_LY": 7.086, "Total_POD_TY": 16, "Total_POD_LY": 7, "State_ACV_TY": 30.505, "State_ACV_LY": 27.096}, {"State": "NE", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 2.081, "Blanco_9LC_TY": 18.986, "A\u00f1ejo_9LC_TY": 3.408, "Reposado_9LC_TY": 6.698, "Cristalino_9LC_TY": 5.084, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.168, "Blanco_9LC_LY": 20.87, "A\u00f1ejo_9LC_LY": 2.453, "Reposado_9LC_LY": 3.077, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 10, "Blanco_POD_TY": 42, "A\u00f1ejo_POD_TY": 16, "Reposado_POD_TY": 26, "Cristalino_POD_TY": 13, "TK_POD_TY": 0, "Joven_POD_LY": 1, "Blanco_POD_LY": 19, "A\u00f1ejo_POD_LY": 7, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 36.257, "Total_9LC_LY": 28.481, "Total_POD_TY": 68, "Total_POD_LY": 20, "State_ACV_TY": 23.177, "State_ACV_LY": 13.986}, {"State": "NJ", "Region": "Other", "SGWS_Region": "Other", "Joven_9LC_TY": 0.0, "Blanco_9LC_TY": 0.0, "A\u00f1ejo_9LC_TY": 0.0, "Reposado_9LC_TY": 0.0, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 0.0, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.0, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 0, "Blanco_POD_TY": 0, "A\u00f1ejo_POD_TY": 0, "Reposado_POD_TY": 0, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 0, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 0, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 0.0, "Total_9LC_LY": 0.0, "Total_POD_TY": 0, "Total_POD_LY": 0, "State_ACV_TY": 0.0, "State_ACV_LY": 0.0}, {"State": "NM", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 5.832, "Blanco_9LC_TY": 39.072, "A\u00f1ejo_9LC_TY": 5.13, "Reposado_9LC_TY": 8.763, "Cristalino_9LC_TY": 7.169, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 1.831, "Blanco_9LC_LY": 28.27, "A\u00f1ejo_9LC_LY": 3.53, "Reposado_9LC_LY": 4.698, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 29, "Blanco_POD_TY": 60, "A\u00f1ejo_POD_TY": 21, "Reposado_POD_TY": 26, "Cristalino_POD_TY": 18, "TK_POD_TY": 0, "Joven_POD_LY": 6, "Blanco_POD_LY": 25, "A\u00f1ejo_POD_LY": 9, "Reposado_POD_LY": 10, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 65.966, "Total_9LC_LY": 42.33, "Total_POD_TY": 90, "Total_POD_LY": 33, "State_ACV_TY": 32.557, "State_ACV_LY": 24.133}, {"State": "NV", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 51.077, "Blanco_9LC_TY": 492.503, "A\u00f1ejo_9LC_TY": 25.106, "Reposado_9LC_TY": 52.406, "Cristalino_9LC_TY": 48.914, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 34.503, "Blanco_9LC_LY": 327.598, "A\u00f1ejo_9LC_LY": 10.662, "Reposado_9LC_LY": 32.806, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 43, "Blanco_POD_TY": 107, "A\u00f1ejo_POD_TY": 34, "Reposado_POD_TY": 52, "Cristalino_POD_TY": 48, "TK_POD_TY": 0, "Joven_POD_LY": 26, "Blanco_POD_LY": 63, "A\u00f1ejo_POD_LY": 14, "Reposado_POD_LY": 16, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 670.006, "Total_9LC_LY": 422.143, "Total_POD_TY": 174, "Total_POD_LY": 81, "State_ACV_TY": 49.606, "State_ACV_LY": 42.423}, {"State": "NY", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 146.773, "Blanco_9LC_TY": 2945.147, "A\u00f1ejo_9LC_TY": 137.106, "Reposado_9LC_TY": 276.926, "Cristalino_9LC_TY": 340.581, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 87.85, "Blanco_9LC_LY": 2102.618, "A\u00f1ejo_9LC_LY": 78.873, "Reposado_9LC_LY": 153.092, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 270, "Blanco_POD_TY": 1214, "A\u00f1ejo_POD_TY": 288, "Reposado_POD_TY": 387, "Cristalino_POD_TY": 174, "TK_POD_TY": 0, "Joven_POD_LY": 98, "Blanco_POD_LY": 684, "A\u00f1ejo_POD_LY": 103, "Reposado_POD_LY": 157, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 3846.533, "Total_9LC_LY": 2481.356, "Total_POD_TY": 1455, "Total_POD_LY": 757, "State_ACV_TY": 44.247, "State_ACV_LY": 29.302}, {"State": "OK", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 2.08, "Blanco_9LC_TY": 35.76, "A\u00f1ejo_9LC_TY": 1.746, "Reposado_9LC_TY": 6.41, "Cristalino_9LC_TY": 3.166, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.333, "Blanco_9LC_LY": 27.058, "A\u00f1ejo_9LC_LY": 0.708, "Reposado_9LC_LY": 2.329, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 11, "Blanco_POD_TY": 73, "A\u00f1ejo_POD_TY": 12, "Reposado_POD_TY": 20, "Cristalino_POD_TY": 6, "TK_POD_TY": 0, "Joven_POD_LY": 1, "Blanco_POD_LY": 26, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 6, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 49.162, "Total_9LC_LY": 32.175, "Total_POD_TY": 90, "Total_POD_LY": 29, "State_ACV_TY": 26.05, "State_ACV_LY": 13.659}, {"State": "SC", "Region": "East", "SGWS_Region": "East", "Joven_9LC_TY": 2.751, "Blanco_9LC_TY": 76.677, "A\u00f1ejo_9LC_TY": 5.899, "Reposado_9LC_TY": 9.816, "Cristalino_9LC_TY": 2.989, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 1.999, "Blanco_9LC_LY": 61.595, "A\u00f1ejo_9LC_LY": 1.92, "Reposado_9LC_LY": 2.834, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 9, "Blanco_POD_TY": 97, "A\u00f1ejo_POD_TY": 23, "Reposado_POD_TY": 22, "Cristalino_POD_TY": 10, "TK_POD_TY": 0, "Joven_POD_LY": 5, "Blanco_POD_LY": 37, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 9, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 98.132, "Total_9LC_LY": 69.1, "Total_POD_TY": 105, "Total_POD_LY": 42, "State_ACV_TY": 44.998, "State_ACV_LY": 33.117}, {"State": "SD", "Region": "Central", "SGWS_Region": "Central", "Joven_9LC_TY": 0.168, "Blanco_9LC_TY": 6.69, "A\u00f1ejo_9LC_TY": 1.575, "Reposado_9LC_TY": 1.538, "Cristalino_9LC_TY": 0.5, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 2.947, "A\u00f1ejo_9LC_LY": 0.28, "Reposado_9LC_LY": 0.915, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 1, "Blanco_POD_TY": 14, "A\u00f1ejo_POD_TY": 7, "Reposado_POD_TY": 7, "Cristalino_POD_TY": 1, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 3, "A\u00f1ejo_POD_LY": 1, "Reposado_POD_LY": 2, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 10.471, "Total_9LC_LY": 4.31, "Total_POD_TY": 18, "Total_POD_LY": 4, "State_ACV_TY": 27.97, "State_ACV_LY": 14.439}, {"State": "TN", "Region": "East", "SGWS_Region": "Central", "Joven_9LC_TY": 3.0, "Blanco_9LC_TY": 23.572, "A\u00f1ejo_9LC_TY": 3.417, "Reposado_9LC_TY": 4.552, "Cristalino_9LC_TY": 3.833, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 3.0, "Blanco_9LC_LY": 24.432, "A\u00f1ejo_9LC_LY": 1.5, "Reposado_9LC_LY": 1.749, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 7, "Blanco_POD_TY": 28, "A\u00f1ejo_POD_TY": 8, "Reposado_POD_TY": 13, "Cristalino_POD_TY": 10, "TK_POD_TY": 0, "Joven_POD_LY": 4, "Blanco_POD_LY": 14, "A\u00f1ejo_POD_LY": 4, "Reposado_POD_LY": 5, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 38.374, "Total_9LC_LY": 30.681, "Total_POD_TY": 40, "Total_POD_LY": 16, "State_ACV_TY": 72.715, "State_ACV_LY": 50.285}, {"State": "TX", "Region": "East", "SGWS_Region": "Central", "Joven_9LC_TY": 136.238, "Blanco_9LC_TY": 1516.491, "A\u00f1ejo_9LC_TY": 109.403, "Reposado_9LC_TY": 162.921, "Cristalino_9LC_TY": 343.412, "TK_9LC_TY": 74.875, "Joven_9LC_LY": 118.99, "Blanco_9LC_LY": 1509.287, "A\u00f1ejo_9LC_LY": 55.248, "Reposado_9LC_LY": 153.455, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.125, "Joven_POD_TY": 184, "Blanco_POD_TY": 737, "A\u00f1ejo_POD_TY": 191, "Reposado_POD_TY": 223, "Cristalino_POD_TY": 323, "TK_POD_TY": 27, "Joven_POD_LY": 76, "Blanco_POD_LY": 373, "A\u00f1ejo_POD_LY": 59, "Reposado_POD_LY": 117, "Cristalino_POD_LY": 0, "TK_POD_LY": 1, "Total_9LC_TY": 2343.34, "Total_9LC_LY": 1854.353, "Total_POD_TY": 887, "Total_POD_LY": 419, "State_ACV_TY": 72.961, "State_ACV_LY": 58.191}, {"State": "VA", "Region": "Control", "SGWS_Region": "Control", "Joven_9LC_TY": 0.0, "Blanco_9LC_TY": 0.0, "A\u00f1ejo_9LC_TY": 0.0, "Reposado_9LC_TY": 0.0, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 0.0, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.0, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 0, "Blanco_POD_TY": 0, "A\u00f1ejo_POD_TY": 0, "Reposado_POD_TY": 0, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 0, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 0, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 0.0, "Total_9LC_LY": 0.0, "Total_POD_TY": 0, "Total_POD_LY": 0, "State_ACV_TY": 0.0, "State_ACV_LY": 0.0}, {"State": "WA", "Region": "West", "SGWS_Region": "West", "Joven_9LC_TY": 2.997, "Blanco_9LC_TY": 66.365, "A\u00f1ejo_9LC_TY": 12.326, "Reposado_9LC_TY": 9.115, "Cristalino_9LC_TY": 17.008, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.999, "Blanco_9LC_LY": 31.64, "A\u00f1ejo_9LC_LY": 3.996, "Reposado_9LC_LY": 4.663, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 15, "Blanco_POD_TY": 111, "A\u00f1ejo_POD_TY": 33, "Reposado_POD_TY": 38, "Cristalino_POD_TY": 33, "TK_POD_TY": 0, "Joven_POD_LY": 2, "Blanco_POD_LY": 35, "A\u00f1ejo_POD_LY": 9, "Reposado_POD_LY": 8, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 107.811, "Total_9LC_LY": 43.296, "Total_POD_TY": 149, "Total_POD_LY": 43, "State_ACV_TY": 31.305, "State_ACV_LY": 21.465}, {"State": "WV", "Region": "Control", "SGWS_Region": "Control", "Joven_9LC_TY": 0.0, "Blanco_9LC_TY": 0.0, "A\u00f1ejo_9LC_TY": 0.0, "Reposado_9LC_TY": 0.0, "Cristalino_9LC_TY": 0.0, "TK_9LC_TY": 0.0, "Joven_9LC_LY": 0.0, "Blanco_9LC_LY": 0.0, "A\u00f1ejo_9LC_LY": 0.0, "Reposado_9LC_LY": 0.0, "Cristalino_9LC_LY": 0.0, "TK_9LC_LY": 0.0, "Joven_POD_TY": 0, "Blanco_POD_TY": 0, "A\u00f1ejo_POD_TY": 0, "Reposado_POD_TY": 0, "Cristalino_POD_TY": 0, "TK_POD_TY": 0, "Joven_POD_LY": 0, "Blanco_POD_LY": 0, "A\u00f1ejo_POD_LY": 0, "Reposado_POD_LY": 0, "Cristalino_POD_LY": 0, "TK_POD_LY": 0, "Total_9LC_TY": 0.0, "Total_9LC_LY": 0.0, "Total_POD_TY": 0, "Total_POD_LY": 0, "State_ACV_TY": 0.0, "State_ACV_LY": 0.0}];
+
+// ── SKU CONFIG ────────────────────────────────────────────────────────────────
+const SKUS = ['Joven','Blanco','Añejo','Reposado','Cristalino','TK'];
+const SKU_KEYS = ['Joven','Blanco','A\u00f1ejo','Reposado','Cristalino','TK'];
+const SKU_COLORS = ['#1A6B5C','#B8922A','#7A4419','#2E5A8B','#6B3A7A','#5A6B2E'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let selRegion = 'ALL', selState = 'ALL', selSKUs = ['ALL'];
+let sortCol = 'acv_ty', sortDir = -1;
+let charts = {};
+
+// ── INIT STATE DROPDOWN ───────────────────────────────────────────────────────
+const stateSelect = document.getElementById('sel-state');
+const allStates = [...new Set(RAW.map(d => d.State))].sort();
+allStates.forEach(s => {
+  const o = document.createElement('option');
+  o.value = o.textContent = s;
+  stateSelect.appendChild(o);
+});
+
+// ── FILTER LOGIC ──────────────────────────────────────────────────────────────
+function getFiltered() {
+  return RAW.filter(d => {
+    if (selRegion !== 'ALL' && d.Region !== selRegion) return false;
+    if (selState !== 'ALL' && d.State !== selState) return false;
+    return true;
+  });
+}
+
+function getSKUFields(suffix) {
+  // suffix = '_9LC_TY', '_9LC_LY', '_POD_TY', '_POD_LY'
+  if (selSKUs.includes('ALL')) return [suffix.replace('_','')]; // handled separately
+  return selSKUs.map(s => SKU_KEYS[SKUS.indexOf(s)] + suffix);
+}
+
+function sumFields(row, fields) {
+  return fields.reduce((a, f) => a + (row[f] || 0), 0);
+}
+
+function getRowLC_TY(row) {
+  if (selSKUs.includes('ALL')) return row.Total_9LC_TY;
+  return SKU_KEYS.filter((_,i) => selSKUs.includes(SKUS[i]))
+    .reduce((a, k) => a + (row[k + '_9LC_TY'] || 0), 0);
+}
+function getRowLC_LY(row) {
+  if (selSKUs.includes('ALL')) return row.Total_9LC_LY;
+  return SKU_KEYS.filter((_,i) => selSKUs.includes(SKUS[i]))
+    .reduce((a, k) => a + (row[k + '_9LC_LY'] || 0), 0);
+}
+function getRowPOD_TY(row) {
+  if (selSKUs.includes('ALL')) return row.Total_POD_TY;
+  return SKU_KEYS.filter((_,i) => selSKUs.includes(SKUS[i]))
+    .reduce((a, k) => a + (row[k + '_POD_TY'] || 0), 0);
+}
+function getRowPOD_LY(row) {
+  if (selSKUs.includes('ALL')) return row.Total_POD_LY;
+  return SKU_KEYS.filter((_,i) => selSKUs.includes(SKUS[i]))
+    .reduce((a, k) => a + (row[k + '_POD_LY'] || 0), 0);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  const data = getFiltered();
+  // Remove zero rows for charts
+  const active = data.filter(d => getRowLC_TY(d) > 0 || getRowPOD_TY(d) > 0 || d.State_ACV_TY > 0);
+
+  // KPIs
+  const totalLCTY = data.reduce((a, d) => a + getRowLC_TY(d), 0);
+  const totalLCLY = data.reduce((a, d) => a + getRowLC_LY(d), 0);
+  const totalPODTY = data.reduce((a, d) => a + getRowPOD_TY(d), 0);
+  const totalPODLY = data.reduce((a, d) => a + getRowPOD_LY(d), 0);
+  const totalACVTY = data.reduce((a, d) => a + d.State_ACV_TY, 0);
+  const totalACVLY = data.reduce((a, d) => a + d.State_ACV_LY, 0);
+
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n.toFixed(1);
+  const pct = (a,b) => b > 0 ? ((a-b)/b*100).toFixed(1) : '+∞';
+  const sign = n => n >= 0 ? '+' : '';
+
+  document.getElementById('kpi-9lc-ty').textContent = fmt(totalLCTY);
+  document.getElementById('kpi-9lc-ly').textContent = fmt(totalLCLY);
+  document.getElementById('kpi-pod-ty').textContent = totalPODTY.toLocaleString();
+
+  const avgACVTY = active.length > 0 ? totalACVTY / active.length : 0;
+  const avgACVLY = active.length > 0 ? totalACVLY / active.length : 0;
+  document.getElementById('kpi-acv-ty').innerHTML = avgACVTY.toFixed(1) + '<sup>%</sup>';
+
+  const lcDelta = totalLCTY - totalLCLY;
+  const lcPct = pct(totalLCTY, totalLCLY);
+  const lcEl = document.getElementById('kpi-9lc-delta');
+  lcEl.className = 'kpi-delta ' + (lcDelta >= 0 ? 'delta-up' : 'delta-dn');
+  lcEl.innerHTML = `<span class="delta-arrow">${lcDelta>=0?'▲':'▼'}</span>${sign(lcDelta)}${fmt(Math.abs(lcDelta))} (${sign(+lcPct)}${lcPct}%) vs LY`;
+
+  const podDelta = totalPODTY - totalPODLY;
+  const podEl = document.getElementById('kpi-pod-delta');
+  podEl.className = 'kpi-delta ' + (podDelta >= 0 ? 'delta-up' : 'delta-dn');
+  podEl.innerHTML = `<span class="delta-arrow">${podDelta>=0?'▲':'▼'}</span>${sign(podDelta)}${Math.abs(podDelta).toLocaleString()} doors vs LY`;
+
+  const acvDelta = avgACVTY - avgACVLY;
+  const acvEl = document.getElementById('kpi-acv-delta');
+  acvEl.className = 'kpi-delta ' + (acvDelta >= 0 ? 'delta-up' : 'delta-dn');
+  acvEl.innerHTML = `<span class="delta-arrow">${acvDelta>=0?'▲':'▼'}</span>${sign(acvDelta)}${Math.abs(acvDelta).toFixed(1)} pp vs LY`;
+
+  renderCharts(active);
+  renderTable(data);
+}
+
+function makeChart(id, type, data, options) {
+  const ctx = document.getElementById(id).getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, { type, data, options });
+}
+
+function renderCharts(data) {
+  // Sort states by TY volume descending
+  const sorted = [...data].sort((a,b) => getRowLC_TY(b) - getRowLC_TY(a));
+  const labels = sorted.map(d => d.State);
+  const lcTY = sorted.map(d => +getRowLC_TY(d).toFixed(2));
+  const lcLY = sorted.map(d => +getRowLC_LY(d).toFixed(2));
+  const podTY = sorted.map(d => getRowPOD_TY(d));
+  const podLY = sorted.map(d => getRowPOD_LY(d));
+  const lcDelta = sorted.map((d,i) => +(lcTY[i] - lcLY[i]).toFixed(2));
+  const podDelta = sorted.map((d,i) => podTY[i] - podLY[i]);
+
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#888' } },
+      y: { grid: { color: '#F0EDE6' }, ticks: { font: { size: 10, family: 'Inter' }, color: '#888' } }
+    }
+  };
+
+  // 9LC grouped bar
+  makeChart('chart-9lc-bar', 'bar', {
+    labels,
+    datasets: [
+      { label: '9LC TY', data: lcTY, backgroundColor: '#1A6B5C', borderRadius: 2, barPercentage: 0.7 },
+      { label: '9LC LY', data: lcLY, backgroundColor: '#D4AE5C', borderRadius: 2, barPercentage: 0.7 }
+    ]
+  }, { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: '9L Cases', font: { size: 10 }, color: '#aaa' } } } });
+
+  // 9LC delta
+  makeChart('chart-9lc-delta', 'bar', {
+    labels,
+    datasets: [{
+      label: 'Δ 9LC',
+      data: lcDelta,
+      backgroundColor: lcDelta.map(v => v >= 0 ? '#1A6B5C' : '#8B2020'),
+      borderRadius: 2,
+      barPercentage: 0.6
+    }]
+  }, { ...baseOpts, plugins: { ...baseOpts.plugins, tooltip: { callbacks: { label: ctx => `Δ ${ctx.raw >= 0 ? '+' : ''}${ctx.raw.toFixed(1)} 9LC` } } } });
+
+  // POD grouped bar
+  makeChart('chart-pod-bar', 'bar', {
+    labels,
+    datasets: [
+      { label: 'POD TY', data: podTY, backgroundColor: '#2E5A8B', borderRadius: 2, barPercentage: 0.7 },
+      { label: 'POD LY', data: podLY, backgroundColor: '#B56628', borderRadius: 2, barPercentage: 0.7 }
+    ]
+  }, { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: 'Accounts', font: { size: 10 }, color: '#aaa' } } } });
+
+  // POD delta
+  makeChart('chart-pod-delta', 'bar', {
+    labels,
+    datasets: [{
+      label: 'Δ POD',
+      data: podDelta,
+      backgroundColor: podDelta.map(v => v >= 0 ? '#2E5A8B' : '#8B2020'),
+      borderRadius: 2,
+      barPercentage: 0.6
+    }]
+  }, { ...baseOpts, plugins: { ...baseOpts.plugins, tooltip: { callbacks: { label: ctx => `${ctx.raw >= 0 ? '+' : ''}${ctx.raw} doors` } } } });
+
+  // SKU doughnut charts (only when ALL selected)
+  const showSkuBreakdown = selSKUs.includes('ALL');
+  document.getElementById('sku-breakdown-section').style.display = showSkuBreakdown ? 'block' : 'none';
+  if (showSkuBreakdown) {
+    const skuTY = SKU_KEYS.map(k => data.reduce((a,d) => a + (d[k+'_9LC_TY']||0), 0));
+    const skuLY = SKU_KEYS.map(k => data.reduce((a,d) => a + (d[k+'_9LC_LY']||0), 0));
+    const donutOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11, family: 'Inter' }, color: '#555', padding: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw.toFixed(1)} 9LC (${(ctx.raw / ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)` } }
+      }
+    };
+    makeChart('chart-sku-ty', 'doughnut', {
+      labels: SKUS, datasets: [{ data: skuTY, backgroundColor: SKU_COLORS, borderWidth: 2, borderColor: '#fff' }]
+    }, donutOpts);
+    makeChart('chart-sku-ly', 'doughnut', {
+      labels: SKUS, datasets: [{ data: skuLY, backgroundColor: SKU_COLORS, borderWidth: 2, borderColor: '#fff' }]
+    }, donutOpts);
+  }
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────────
+function renderTable(data) {
+  const rows = data.map(d => ({
+    State: d.State,
+    Region: d.Region,
+    acv_ty: d.State_ACV_TY,
+    acv_ly: d.State_ACV_LY,
+    acv_chg: d.State_ACV_TY - d.State_ACV_LY,
+    lc_ty: getRowLC_TY(d),
+    lc_ly: getRowLC_LY(d),
+    lc_chg: getRowLC_LY(d) > 0 ? (getRowLC_TY(d)/getRowLC_LY(d)-1)*100 : null,
+    pod_ty: getRowPOD_TY(d),
+    pod_ly: getRowPOD_LY(d),
+    pod_chg: getRowPOD_TY(d) - getRowPOD_LY(d)
+  }));
+
+  rows.sort((a,b) => {
+    const av = a[sortCol] ?? -999, bv = b[sortCol] ?? -999;
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
+  });
+
+  document.getElementById('table-count').textContent = `${rows.length} state${rows.length!==1?'s':''}`;
+
+  const maxACV = Math.max(...rows.map(r => r.acv_ty), 1);
+  const tbody = document.getElementById('state-tbody');
+  tbody.innerHTML = rows.map(r => {
+    const lcChgTxt = r.lc_chg === null ? '—' : `${r.lc_chg>=0?'+':''}${r.lc_chg.toFixed(1)}%`;
+    const lcChgCls = r.lc_chg === null ? '' : r.lc_chg >= 0 ? 'chg-up' : 'chg-dn';
+    const podChgCls = r.pod_chg >= 0 ? 'chg-up' : 'chg-dn';
+    const acvChgCls = r.acv_chg >= 0 ? 'chg-up' : 'chg-dn';
+    const barW = Math.max(0, Math.round(r.acv_ty / maxACV * 100));
+    return `<tr>
+      <td class="state-col">${r.State}</td>
+      <td class="region-col">${r.Region}</td>
+      <td class="num">
+        <div class="bar-cell">
+          <span>${r.acv_ty.toFixed(1)}%</span>
+          <div class="mini-bar-bg"><div class="mini-bar" style="width:${barW}%"></div></div>
+        </div>
+      </td>
+      <td class="num">${r.acv_ly.toFixed(1)}%</td>
+      <td class="num ${acvChgCls}">${r.acv_chg>=0?'+':''}${r.acv_chg.toFixed(1)} pp</td>
+      <td class="num">${r.lc_ty.toFixed(1)}</td>
+      <td class="num">${r.lc_ly.toFixed(1)}</td>
+      <td class="num ${lcChgCls}">${lcChgTxt}</td>
+      <td class="num">${r.pod_ty}</td>
+      <td class="num">${r.pod_ly}</td>
+      <td class="num ${podChgCls}">${r.pod_chg>=0?'+':''}${r.pod_chg}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SORT ──────────────────────────────────────────────────────────────────────
+function sortTable(col) {
+  if (sortCol === col) { sortDir *= -1; }
+  else { sortCol = col; sortDir = -1; }
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.remove('sorted');
+    th.querySelector('.sort-arrow').textContent = '↕';
+  });
+  const th = document.getElementById('th-' + col);
+  if (th) {
+    th.classList.add('sorted');
+    th.querySelector('.sort-arrow').textContent = sortDir === -1 ? '↓' : '↑';
+  }
+  renderTable(getFiltered());
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+document.getElementById('sel-region').addEventListener('change', e => {
+  selRegion = e.target.value;
+  selState = 'ALL';
+  document.getElementById('sel-state').value = 'ALL';
+  render();
+});
+document.getElementById('sel-state').addEventListener('change', e => {
+  selState = e.target.value;
+  render();
+});
+
+document.getElementById('sku-pills').addEventListener('click', e => {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  const sku = pill.dataset.sku;
+  if (sku === 'ALL') {
+    selSKUs = ['ALL'];
+  } else {
+    selSKUs = selSKUs.filter(s => s !== 'ALL');
+    if (selSKUs.includes(sku)) {
+      selSKUs = selSKUs.filter(s => s !== sku);
+      if (selSKUs.length === 0) selSKUs = ['ALL'];
+    } else {
+      selSKUs.push(sku);
+    }
+  }
+  document.querySelectorAll('.pill').forEach(p => {
+    p.classList.toggle('active', selSKUs.includes(p.dataset.sku));
+  });
+  render();
+});
+
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
